@@ -17,18 +17,15 @@ import core.thread;
 import std.parallelism;
 import std.concurrency;
 import std.range;
-//import std.typecons;
-//import std.stdio;
-// #include <stdlib.h>
-//import std.string;
-//import pila;
-// #include <stdio.h>
-///
+
+import std.conv:to; // ALIAS --> TYPDEF
+
 struct abb_nodo {
     string clave;
     void dato;
-}abb_nodo_t;
-typedef struct abb_nodo abb_nodo_t;
+}
+
+alias abb_nodo abb_nodo_t;
 
 abb_nodo_t* abb_nodo_crear(const char *clave, void *dato){
 	abb_nodo_t* nodo = malloc(sizeof(abb_nodo_t));
@@ -65,9 +62,9 @@ struct abb {
     abb_comparar_clave_t cmp;
     abb_destruir_dato_t destruir_dato;
     size_t cant;
-}abb_t;
-typedef struct abb abb_t;
+}
 
+alias abb abb_t;
 
 abb_t* abb_crear(abb_comparar_clave_t cmp, abb_destruir_dato_t destruir_dato) {
 	abb_t* abb = malloc(sizeof(abb_t));
