@@ -2,6 +2,7 @@
 import std.stdio;
 import std.string;
 import pila;
+import std.conv:to;
 
 // op 1, poner abb_nodo_t como nombre directo
 // op 1 
@@ -11,7 +12,8 @@ struct abb_nodo {
     string clave;
     void dato;
 }
-abb_nodo abb_nodo_t;
+//abb_nodo abb_nodo_t;
+alias abb_nodo abb_nodo_t;
 
 abb_nodo_t* abb_nodo_crear(const char *clave, void *dato){
 	abb_nodo_t* nodo = malloc(sizeof(abb_nodo_t));
@@ -49,8 +51,8 @@ struct abb {
     abb_destruir_dato_t destruir_dato;
     size_t cant;
 }
-abb abb_t;
-
+//abb abb_t;
+alias abb abb_t;
 
 abb_t* abb_crear(abb_comparar_clave_t cmp, abb_destruir_dato_t destruir_dato) {
 	abb_t* abb = malloc(sizeof(abb_t));

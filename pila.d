@@ -17,12 +17,14 @@ struct pila {
 alias pila pila_t;
 
 pila_t* pila_crear() {
-    pila_t *pila = malloc(sizeof(pila_t));//???
+    //pila_t *pila = malloc(sizeof(pila_t));//???
+    pila_t *pila = cast(pila_t*) malloc((pila_t).sizeof);
     if (pila == null) {
         return null;
     }
 
-    pila.datos = malloc(CAPACIDAD_INICIAL * sizeof(void*)); //????? ESTO ROMPE TODO
+    //pila.datos = malloc(CAPACIDAD_INICIAL * sizeof(void*)); //????? ESTO ROMPE TODO
+    pila.datos = cast(void**) malloc(CAPACIDAD_INICIAL * (void*).sizeof);
 
     if (pila.datos == null) {
         free(pila);
@@ -39,7 +41,8 @@ void pila_destruir(pila_t *pila) {
 }
 
 bool pila_redimensionar(pila_t *pila, size_t redimension) {
-    void **datos_nuevos = realloc(pila.datos, redimension * sizeof(void*)); //???
+    //void **datos_nuevos = realloc(pila.datos, redimension * sizeof(void*)); //???
+    void **datos_nuevos = cast(void**) realloc(pila.datos, redimension * (void*).sizeof);
     if (redimension > 0 && datos_nuevos == null) {
         return false; 
     }
@@ -69,7 +72,7 @@ void *pila_ver_tope(const pila_t *pila) {
     if (pila.cantidad == 0) {
         return null;
     }
-    return pila.datos[pila.cantidad - 1];
+    return ((pila).datos[pila.cantidad - 1]);
 }
 
 void *pila_desapilar(pila_t *pila) {
