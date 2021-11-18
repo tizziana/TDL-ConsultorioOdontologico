@@ -72,7 +72,8 @@ void *pila_ver_tope(const pila_t *pila) {
     if (pila.cantidad == 0) {
         return null;
     }
-    return ((pila).datos[pila.cantidad - 1]);
+    void* tope = cast(void*)((pila).datos[pila.cantidad - 1]); 
+    return tope;
 }
 
 void *pila_desapilar(pila_t *pila) {
