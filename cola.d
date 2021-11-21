@@ -7,10 +7,11 @@ import std.format;
 import std.typecons;
 import std.array;
 import std.string;
-import std.typecons : No;
-import std.typecons;
-import std.range; 
-import std.parallelism;
+// import std.typecons : No;
+// import std.typecons;
+// import std.range; 
+// import std.parallelism;
+// export cola_t;
 
 struct cola {
     string[] lista_cola;
@@ -48,7 +49,7 @@ string cola_desencolar(cola_t *cola) {
         return null;
     }
     string dato = cola.lista_cola[0];
-    cola.lista_cola.remove(0);
+    cola.lista_cola = cola.lista_cola.remove(0);
     return dato;
 }
 
@@ -59,12 +60,11 @@ int cola_cantidad(cola_t *cola) {
 int main(){
     cola_t* cola = cola_crear();
     cola_encolar(cola, "fede");
-    cola_encolar(cola, "flor");
-    cola_encolar(cola, "fran");
-    cola_encolar(cola, "tizzi");
+    cola_encolar(cola, "fLOR");
     writeln(cola_cantidad(cola));
 
     string desencolar = cola_desencolar(cola);
+    writeln(cola_cantidad(cola));
     writeln(desencolar);
     cola_destruir(cola);
     return 0;
