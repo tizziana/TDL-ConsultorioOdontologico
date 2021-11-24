@@ -12,6 +12,9 @@ import std.typecons;
 import std.range; 
 import std.parallelism;
 
+enum string URGENTE = "URGENTE";
+enum string REGULAR = "REGULAR";
+
 struct cola {
     string[] lista_cola;
 }
@@ -75,6 +78,14 @@ class Multicola {
         cola_encolar(this.cola_regular, paciente);
     }
 
+    void multicola_encolar(string paciente, string urgencia) {
+        if (urgencia == URGENTE) {
+            multicola_encolar_prioritario(paciente);
+        } else {
+            multicola_encolar_regular(paciente);
+        }
+    }
+
     string multicola_desencolar() {
         if (multicola_esta_vacia()) {
             return null;
@@ -115,6 +126,8 @@ class Multicola {
         assert(multicola.multicola_desencolar() == "Fede");
         assert(multicola.multicola_desencolar() == "Fran");
         assert(multicola.multicola_cantidad() == 0);
+        multicola.multicola_encolar("Flor", "URGENTE");
+        assert(multicola.multicola_cantidad() == 1);
     }
 }
 
