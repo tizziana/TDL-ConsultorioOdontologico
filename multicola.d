@@ -59,8 +59,6 @@ int cola_cantidad(cola_t *cola) {
     return cast(int) cola.lista_cola.length;
 }
 
-
-
 class Multicola {
     cola_t* cola_prioritaria;
     cola_t* cola_regular;
@@ -130,7 +128,6 @@ class Multicola {
         assert(multicola.multicola_cantidad() == 1);
     }
 }
-
 
 int main() {
     Multicola multicola = new Multicola();

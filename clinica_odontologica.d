@@ -4,90 +4,183 @@ import std.conv:to;
 import core.stdc.stdlib;
 import std.conv;
 import std.format;
-import std.typecons;
-import std.array;
+import std.array : array;
 import std.string;
-import std.typecons : No;
-import std.typecons;
+import std.typecons : Yes;
 import std.range; 
 import std.parallelism;
-import multicola;
-import comandos;
 
-enum char SEPARADOR = ',';
-enum string COMANDO_PEDIR_TURNO = "PEDIR_TURNO";
-enum string COMANDO_ATENDER = "ATENDER_SIGUIENTE";
+enum string URGENTE = "URGENTE";
+enum string REGULAR = "REGULAR";
+enum string ATENDER_SIGUIETE = "ATENDER_SIGUIETE";
 
-static void eliminar_fin_linea(string linea) {
-	size_t len = linea.length;
-	if (linea[len - 1] == '\n') {
-		// linea.remove(len-1);
-		// linea[len - 1] = '\0';
-		strip(linea);
-	}
+//alias stdin = makeGlobal!"core.stdc.stdio.stdin".makeGlobal; 
+//alias stdin = makeGlobal!(StdFileHandle.stdin);
+
+void pedir_turno(Multicola multicola, string nombre, string prioridad) { 
+    prioridad == URGENTE ? multicola.multicola_encolar_prioritario(nombre) : multicola.multicola_encolar_regular(nombre); 
+	writeln("Se le asigno un turno con prioridad ", prioridad, " a ", nombre);
 }
 
-int len_arreglo(string* arreglo) {
-    int contador = 0;
-    for (int i = 0; arreglo[i] != null; i ++) {
-        contador++;
-    }
-    return contador;
-}
-
-void procesar_comando(const string comando, string* parametros, Multicola multicola) {
-    int largo = len_arreglo(parametros);
-    if (comando == COMANDO_PEDIR_TURNO) {
-        if (largo != 3) {
-            //fprintf(stdout, ENOENT_PARAMS, comando); // HACER MANEJO DE ERRORES
-            return;
-        }
-		pedir_turno(parametros[0], parametros[1], multicola);
-	} else if (comando == COMANDO_ATENDER) {
-        if (largo != 1) {
-            //fprintf(stdout, ENOENT_PARAMS, comando); // HACER MANEJO DE ERRORES
-            return;
-        }
-		atender_paciente(multicola); 
-	} else {
-		//fprintf(stdout, ENOENT_CMD, comando); // HACER MANEJO DE ERRORES
-	}
+void atender_paciente(Multicola multicola) {
+    string pacienteAtendido = multicola.multicola_desencolar();
+    writeln("Se atendio al paciente ", pacienteAtendido);
 }
 
 void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o ATENDER_SIGUIETE
-	char* linea = null;
-	size_t c = 0;
-	string[] parametros;
-	while (getline(&linea, &c, stdin) > 0) {
-		string linea_s = to!string(linea);
-		eliminar_fin_linea(linea_s);
-		string[] campos = linea_s.split(':');
-		if (campos[1] == null) {
-			// printf(ENOENT_FORMATO, linea);
-			// free_strv(campos);
-            //MANEJO DE ERRORES
-			continue;	
-		}
-        if (campos[1]) {
-            parametros = split(campos[1], ',');
-        } else {
-            parametros = null;
+    string[] linea;
+    string[] turno;
+    string comando;
+    string nombre;
+    string prioridad;
+    string paciente;
+
+	string input;
+	string[] lista = stdin.byLineCopy(Yes.keepTerminator).array();
+
+    for (int i = 0; i < lista.length; i++) {
+		input = lista[i];
+		input = strip(input);
+        linea = split(input, ":");
+        comando = linea[0];
+
+        if (comando == ATENDER_SIGUIETE) {
+            atender_paciente(multicola);
         }
-		
-		procesar_comando(campos[0], parametros, multicola);
-		// free_strv(parametros);
-		// free_strv(campos); // LO HACE EL GARBAGE COLLECTOR?
-	}
-	free(linea);
+		else {
+			paciente = linea[1];
+
+			turno = split(paciente, ",");
+
+			nombre = turno[0];
+			prioridad = turno[1];
+
+			pedir_turno(multicola, nombre, prioridad);
+		}
+
+    }
 }
 
-
-
-int main() {
+int main () {
     Multicola multicola = new Multicola;
     
     procesar_entrada(multicola); 
 
-    // cola del multicola destruir
     return 0;
+}
+
+
+// Multicola y cola
+struct cola {
+    string[] lista_cola;
+}
+alias cola cola_t;
+
+cola_t *cola_crear() {
+    cola_t *cola = cast(cola_t*) malloc((cola_t).sizeof); 
+    if (cola == null) {
+        return null;
+    }
+    string[] lista;
+    cola.lista_cola = lista;
+    return cola;
+}
+
+void cola_destruir(cola_t *cola){
+    free(cola);
+}
+
+bool cola_esta_vacia(const cola_t *cola) {
+    return cola.lista_cola.length == 0;
+}
+
+void cola_encolar(cola_t *cola, string valor) {
+    cola.lista_cola ~= valor; 
+}
+
+string cola_ver_primero(const cola_t *cola) {
+    return cola.lista_cola[0];
+}
+
+string cola_desencolar(cola_t *cola) {
+    if (cola_esta_vacia(cola)) {
+        return null;
+    }
+    string dato = cola.lista_cola[0];
+    cola.lista_cola = cola.lista_cola.remove(0);
+    return dato;
+}
+
+int cola_cantidad(cola_t *cola) {
+    return cast(int) cola.lista_cola.length;
+}
+
+class Multicola {
+    cola_t* cola_prioritaria;
+    cola_t* cola_regular;
+
+    this() {
+        this.cola_prioritaria = cola_crear();
+        this.cola_regular = cola_crear();
+    }
+
+    void multicola_encolar_prioritario(string paciente) {
+        cola_encolar(this.cola_prioritaria, paciente);
+    }
+
+    void multicola_encolar_regular(string paciente) {
+        cola_encolar(this.cola_regular, paciente);
+    }
+
+    void multicola_encolar(string paciente, string urgencia) {
+        if (urgencia == URGENTE) {
+            multicola_encolar_prioritario(paciente);
+        } else {
+            multicola_encolar_regular(paciente);
+        }
+    }
+
+    string multicola_desencolar() {
+        if (multicola_esta_vacia()) {
+            return null;
+        }
+        if (!cola_esta_vacia(this.cola_prioritaria)) {
+            return cola_desencolar(this.cola_prioritaria);
+        }
+        return cola_desencolar(this.cola_regular);
+    }
+
+    int multicola_cantidad() {
+        return (cola_cantidad(this.cola_prioritaria) + cola_cantidad(this.cola_regular));
+    }
+
+    bool multicola_esta_vacia() {
+        return !multicola_cantidad();
+    }
+
+    string multicola_ver_primero() {
+        if (multicola_esta_vacia()) {
+            return null;
+        }
+        if (cola_esta_vacia(this.cola_prioritaria) == false) {
+            return cola_ver_primero(this.cola_prioritaria);
+        }
+        return cola_ver_primero(this.cola_regular);
+    }
+
+    unittest {
+        Multicola multicola = new Multicola;
+        multicola.multicola_encolar_prioritario("Flor");
+        multicola.multicola_encolar_regular("Fede");
+        multicola.multicola_encolar_regular("Fran");
+        multicola.multicola_encolar_prioritario("Tizziana");
+        assert(multicola.multicola_cantidad() == 4);
+        assert(multicola.multicola_desencolar() == "Flor");
+        assert(multicola.multicola_desencolar() == "Tizziana");
+        assert(multicola.multicola_desencolar() == "Fede");
+        assert(multicola.multicola_desencolar() == "Fran");
+        assert(multicola.multicola_cantidad() == 0);
+        multicola.multicola_encolar("Flor", "URGENTE");
+        assert(multicola.multicola_cantidad() == 1);
+    }
 }
