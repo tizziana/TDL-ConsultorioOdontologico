@@ -9,10 +9,16 @@ import std.string;
 import std.typecons : Yes;
 import std.range; 
 import std.parallelism;
+import std.exception;
+import std.traits;
+import std.ascii : isAlpha;
+
+
 
 enum string URGENTE = "URGENTE";
 enum string REGULAR = "REGULAR";
 enum string ATENDER_SIGUIETE = "ATENDER_SIGUIETE";
+enum string PEDIR_TURNO = "PEDIR_TURNO";
 
 //alias stdin = makeGlobal!"core.stdc.stdio.stdin".makeGlobal; 
 //alias stdin = makeGlobal!(StdFileHandle.stdin);
@@ -23,7 +29,13 @@ void pedir_turno(Multicola multicola, string nombre, string prioridad) {
 }
 
 void atender_paciente(Multicola multicola) {
-    string pacienteAtendido = multicola.multicola_desencolar();
+    string pacienteAtendido;
+    try {
+        pacienteAtendido = multicola.multicola_desencolar();
+    } catch (Error err) {
+        writeln(err.msg);
+        return;
+    }
     writeln("Se atendio al paciente ", pacienteAtendido);
 }
 
@@ -47,17 +59,24 @@ void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o AT
         if (comando == ATENDER_SIGUIETE) {
             atender_paciente(multicola);
         }
-		else {
+		else if (comando == PEDIR_TURNO) {
 			paciente = linea[1];
 
 			turno = split(paciente, ",");
-
-			nombre = turno[0];
-			prioridad = turno[1];
+    
+            try {
+			    nombre = turno[0];
+			    prioridad = turno[1];
+            } catch (Error err) {
+                writeln("La cantidad de parametros no es suficiente");
+                continue;
+            }
 
 			pedir_turno(multicola, nombre, prioridad);
-		}
-
+		} 
+        else {
+            writeln("El comando es invalido");
+        }
     }
 }
 
@@ -99,12 +118,15 @@ void cola_encolar(cola_t *cola, string valor) {
 }
 
 string cola_ver_primero(const cola_t *cola) {
+    if (cola_esta_vacia(cola)) {
+        throw new Error("La cola esta vacia");
+    }
     return cola.lista_cola[0];
 }
 
 string cola_desencolar(cola_t *cola) {
     if (cola_esta_vacia(cola)) {
-        return null;
+        throw new Error("La cola esta vacia");
     }
     string dato = cola.lista_cola[0];
     cola.lista_cola = cola.lista_cola.remove(0);
@@ -124,11 +146,21 @@ class Multicola {
         this.cola_regular = cola_crear();
     }
 
-    void multicola_encolar_prioritario(string paciente) {
-        cola_encolar(this.cola_prioritaria, paciente);
+    void multicola_encolar_prioritario(string paciente)
+    in {
+        assert(isSomeString!(typeof(paciente)));
+    } 
+    body {
+        cola_encolar(this.cola_prioritaria, paciente);    
     }
 
-    void multicola_encolar_regular(string paciente) {
+    void multicola_encolar_regular(string paciente)
+    in {
+        assert(isSomeString!(typeof(paciente)));
+        assert(!isNumeric(paciente));
+        assert(all!isAlpha(paciente));
+    } 
+    body {
         cola_encolar(this.cola_regular, paciente);
     }
 
@@ -141,9 +173,6 @@ class Multicola {
     }
 
     string multicola_desencolar() {
-        if (multicola_esta_vacia()) {
-            return null;
-        }
         if (!cola_esta_vacia(this.cola_prioritaria)) {
             return cola_desencolar(this.cola_prioritaria);
         }
@@ -159,9 +188,6 @@ class Multicola {
     }
 
     string multicola_ver_primero() {
-        if (multicola_esta_vacia()) {
-            return null;
-        }
         if (cola_esta_vacia(this.cola_prioritaria) == false) {
             return cola_ver_primero(this.cola_prioritaria);
         }
