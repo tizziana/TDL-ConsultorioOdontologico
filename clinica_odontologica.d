@@ -12,7 +12,9 @@ import std.parallelism;
 import std.exception;
 import std.traits;
 import std.ascii : isAlpha;
-
+import std.file;
+import std.concurrency;
+import core.thread;
 
 
 enum string URGENTE = "URGENTE";
@@ -23,20 +25,36 @@ enum string PEDIR_TURNO = "PEDIR_TURNO";
 //alias stdin = makeGlobal!"core.stdc.stdio.stdin".makeGlobal; 
 //alias stdin = makeGlobal!(StdFileHandle.stdin);
 
-void pedir_turno(Multicola multicola, string nombre, string prioridad) { 
-    prioridad == URGENTE ? multicola.multicola_encolar_prioritario(nombre) : multicola.multicola_encolar_regular(nombre); 
-	writeln("Se le asigno un turno con prioridad ", prioridad, " a ", nombre);
+
+void escribir_reporte(string mensaje) {
+    File archivo = File("reporte_clinica.txt", "a");
+    archivo.writeln(mensaje);
+    archivo.close();
+    writeln(mensaje);
 }
 
-void atender_paciente(Multicola multicola) {
+
+string pedir_turno(Multicola multicola, string nombre, string prioridad) { 
+    prioridad == URGENTE ? multicola.multicola_encolar_prioritario(nombre) : multicola.multicola_encolar_regular(nombre); 
+	// writeln("Se le asigno un turno con prioridad ", prioridad, " a ", nombre);
+    string mensaje = format("Se le asigno un turno con prioridad %s a %s", prioridad, nombre);
+    // spawn(&escribir_reporte, mensaje);
+    return mensaje;
+}
+
+string atender_paciente(Multicola multicola) {
     string pacienteAtendido;
     try {
         pacienteAtendido = multicola.multicola_desencolar();
     } catch (Error err) {
-        writeln(err.msg);
-        return;
+        // writeln(err.msg);
+        return err.msg;
     }
-    writeln("Se atendio al paciente ", pacienteAtendido);
+    // writeln("Se atendio al paciente ", pacienteAtendido);
+    string mensaje = format("Se atendio al paciente %s", pacienteAtendido);
+    // Thread.sleep(1.seconds);
+    // spawn(&escribir_reporte, mensaje);
+    return mensaje;
 }
 
 void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o ATENDER_SIGUIETE
@@ -51,13 +69,14 @@ void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o AT
 	string[] lista = stdin.byLineCopy(Yes.keepTerminator).array();
 
     for (int i = 0; i < lista.length; i++) {
+        string mensaje;
 		input = lista[i];
 		input = strip(input);
         linea = split(input, ":");
         comando = linea[0];
 
         if (comando == ATENDER_SIGUIETE) {
-            atender_paciente(multicola);
+            mensaje = atender_paciente(multicola);
         }
 		else if (comando == PEDIR_TURNO) {
 			paciente = linea[1];
@@ -67,16 +86,19 @@ void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o AT
             try {
 			    nombre = turno[0];
 			    prioridad = turno[1];
+                mensaje = pedir_turno(multicola, nombre, prioridad);
             } catch (Error err) {
-                writeln("La cantidad de parametros no es suficiente");
-                continue;
+                // writeln("La cantidad de parametros no es suficiente");
+                mensaje = "La cantidad de parametros no es suficiente";
+                // continue;
             }
-
-			pedir_turno(multicola, nombre, prioridad);
 		} 
         else {
-            writeln("El comando es invalido");
+            // writeln("El comando es invalido");
+            mensaje = "El comando es invalido";
         }
+        Thread.sleep(1.seconds);
+        spawn(&escribir_reporte, mensaje);
     }
 }
 
