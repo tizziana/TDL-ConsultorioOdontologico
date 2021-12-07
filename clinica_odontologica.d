@@ -25,7 +25,6 @@ enum string PEDIR_TURNO = "PEDIR_TURNO";
 //alias stdin = makeGlobal!"core.stdc.stdio.stdin".makeGlobal; 
 //alias stdin = makeGlobal!(StdFileHandle.stdin);
 
-
 void escribir_reporte(string mensaje) {
     File archivo = File("reporte_clinica.txt", "a");
     archivo.writeln(mensaje);
@@ -34,10 +33,10 @@ void escribir_reporte(string mensaje) {
 }
 
 
-string pedir_turno(Multicola multicola, string nombre, string prioridad) { 
-    prioridad == URGENTE ? multicola.multicola_encolar_prioritario(nombre) : multicola.multicola_encolar_regular(nombre); 
+string pedir_turno(Multicola multicola, paciente_t* Paciente) { 
+    Paciente.prioridad == URGENTE ? multicola.multicola_encolar_prioritario(Paciente.nombre) : multicola.multicola_encolar_regular(Paciente.nombre); 
 	// writeln("Se le asigno un turno con prioridad ", prioridad, " a ", nombre);
-    string mensaje = format("Se le asigno un turno con prioridad %s a %s", prioridad, nombre);
+    string mensaje = format("Se le asigno un turno con prioridad %s a %s", Paciente.prioridad, Paciente.nombre);
     // spawn(&escribir_reporte, mensaje);
     return mensaje;
 }
@@ -61,32 +60,31 @@ void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o AT
     string[] linea;
     string[] turno;
     string comando;
-    string nombre;
-    string prioridad;
-    string paciente;
+    // string paciente;
 
 	string input;
 	string[] lista = stdin.byLineCopy(Yes.keepTerminator).array();
 
     for (int i = 0; i < lista.length; i++) {
         string mensaje;
-		input = lista[i];
-		input = strip(input);
-        linea = split(input, ":");
+		// input = lista[i];
+		// input = strip(lista[i]);
+        linea = split(strip(lista[i]), ":");
         comando = linea[0];
 
         if (comando == ATENDER_SIGUIETE) {
             mensaje = atender_paciente(multicola);
         }
 		else if (comando == PEDIR_TURNO) {
-			paciente = linea[1];
+			// paciente = linea[1];
 
-			turno = split(paciente, ",");
+			turno = split( linea[1], ",");
     
             try {
-			    nombre = turno[0];
-			    prioridad = turno[1];
-                mensaje = pedir_turno(multicola, nombre, prioridad);
+                paciente_t* Paciente = crear_paciente(turno[0], turno[1]);
+			    // nombre = turno[0];
+			    // prioridad = turno[1];
+                mensaje = pedir_turno(multicola, Paciente);
             } catch (Error err) {
                 // writeln("La cantidad de parametros no es suficiente");
                 mensaje = "La cantidad de parametros no es suficiente";
@@ -97,7 +95,7 @@ void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o AT
             // writeln("El comando es invalido");
             mensaje = "El comando es invalido";
         }
-        Thread.sleep(1.seconds);
+        thread_joinAll();
         spawn(&escribir_reporte, mensaje);
     }
 }
@@ -110,6 +108,22 @@ int main () {
     return 0;
 }
 
+
+//Paciente
+
+struct Paciente{
+    string nombre;
+    string prioridad;
+}
+alias Paciente paciente_t;
+
+paciente_t* crear_paciente(string nombre, string prioridad){
+    paciente_t* Paciente = cast(paciente_t*) malloc((paciente_t).sizeof);
+    if(!Paciente) return null;
+    Paciente.nombre = nombre;
+    Paciente.prioridad = prioridad;
+    return Paciente;
+}
 
 // Multicola y cola
 struct cola {
@@ -168,31 +182,31 @@ class Multicola {
         this.cola_regular = cola_crear();
     }
 
-    void multicola_encolar_prioritario(string paciente)
+    void multicola_encolar_prioritario(string nombrePaciente)
     in {
-        assert(isSomeString!(typeof(paciente)));
+        assert(isSomeString!(typeof(nombrePaciente)));
     } 
     body {
-        cola_encolar(this.cola_prioritaria, paciente);    
+        cola_encolar(this.cola_prioritaria, nombrePaciente);    
     }
 
-    void multicola_encolar_regular(string paciente)
+    void multicola_encolar_regular(string nombrePaciente)
     in {
-        assert(isSomeString!(typeof(paciente)));
-        assert(!isNumeric(paciente));
-        assert(all!isAlpha(paciente));
+        assert(isSomeString!(typeof(nombrePaciente)));
+        assert(!isNumeric(nombrePaciente));
+        assert(all!isAlpha(nombrePaciente));
     } 
     body {
-        cola_encolar(this.cola_regular, paciente);
+        cola_encolar(this.cola_regular, nombrePaciente);
     }
 
-    void multicola_encolar(string paciente, string urgencia) {
-        if (urgencia == URGENTE) {
-            multicola_encolar_prioritario(paciente);
-        } else {
-            multicola_encolar_regular(paciente);
-        }
-    }
+    // void multicola_encolar(string paciente, string urgencia) {
+    //     if (urgencia == URGENTE) {
+    //         multicola_encolar_prioritario(paciente);
+    //     } else {
+    //         multicola_encolar_regular(paciente);
+    //     }
+    // }
 
     string multicola_desencolar() {
         if (!cola_esta_vacia(this.cola_prioritaria)) {
