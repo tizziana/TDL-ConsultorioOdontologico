@@ -116,6 +116,7 @@ paciente_t* crear_paciente(string nombre, string prioridad){
 /***********************************************/
 /**                   COLA                    **/
 /***********************************************/
+
 struct cola {
     string[] lista_cola;
 }
@@ -167,6 +168,7 @@ int cola_cantidad(cola_t *cola) {
 /***********************************************/
 /**               MULTICOLA                   **/
 /***********************************************/
+
 class Multicola {
     cola_t* cola_prioritaria;
     cola_t* cola_regular;
