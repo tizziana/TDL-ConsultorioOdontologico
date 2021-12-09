@@ -27,11 +27,11 @@ enum string ATENDER_SIGUIETE = "ATENDER_SIGUIETE";
 enum string PEDIR_TURNO = "PEDIR_TURNO";
 enum string INFORME = "INFORME";
 
-string escribir_resumen(string[][int] pacientes, int desde, int hasta) {
-    auto dni_pacientes = pacientes.keys.reverse()[desde .. hasta];
-    auto lista_pacientes = pacientes.values.reverse()[desde .. hasta];
+string escribir_resumen(string[][int] pacientes, int desde, ulong hasta) {
+    auto dni_pacientes = pacientes.keys.reverse()[desde - 1 .. hasta];
+    auto lista_pacientes = pacientes.values.reverse()[desde - 1 .. hasta];
     File archivo = File("resumen_clinica.txt", "a");
-    for (int i = 0; i <= (hasta - desde); i ++) {
+    for (int i = 0; i <= dni_pacientes.length - 1; i ++) {
         archivo.writeln(format("dni %d, nombre %s, cantidad de veces atendido %s", dni_pacientes[i], lista_pacientes[i][0], lista_pacientes[i][1]));
         continue;
     }
@@ -107,10 +107,14 @@ void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o AT
         else if (comando == INFORME) {
             string[] limites = split(linea[1], ",");
 
+            ulong hasta = to!ulong(limites[1]);
+
+            hasta > pacientes.length ? hasta = pacientes.length : true;
+
             try {
-                mensaje = escribir_resumen(pacientes, to!int(limites[0]), to!int(limites[1])); 
+                mensaje = escribir_resumen(pacientes, to!int(limites[0]), hasta); 
             } catch (Error err) {
-                mensaje = "La cantidad de parametros no es suficiente";
+                mensaje = "La cantidad de parametros no es suficiente AHhHHHHHHHHh";
             }
         }
         else {
