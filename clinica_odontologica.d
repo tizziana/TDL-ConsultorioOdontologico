@@ -28,13 +28,11 @@ enum string PEDIR_TURNO = "PEDIR_TURNO";
 enum string INFORME = "INFORME";
 
 string escribir_resumen(string[][int] pacientes, int desde, int hasta) {
-    auto dni_pacientes = pacientes.keys;
-    // writeln(dni_pacientes);
-    dni_pacientes = dni_pacientes[desde .. hasta];
-    auto lista_pacientes = pacientes.values[desde .. hasta];
+    auto dni_pacientes = pacientes.keys.reverse()[desde .. hasta];
+    auto lista_pacientes = pacientes.values.reverse()[desde .. hasta];
     File archivo = File("resumen_clinica.txt", "a");
     for (int i = 0; i <= (hasta - desde); i ++) {
-        archivo.writeln(format("dni %d, nombre %s, cantidad de veces atendido %d", dni_pacientes[i], lista_pacientes[i][0], lista_pacientes[i][1]));
+        archivo.writeln(format("dni %d, nombre %s, cantidad de veces atendido %s", dni_pacientes[i], lista_pacientes[i][0], lista_pacientes[i][1]));
         continue;
     }
     archivo.close();
@@ -54,6 +52,19 @@ string pedir_turno(Multicola multicola, paciente_t* Paciente) {
     return mensaje;
 }
 
+string[][int] incrementar_atendido(string[][int] pacientes, paciente_t* pacienteAtendido) {
+    if (0 in pacientes) {pacientes.remove(0);} // porque sino no funciona
+    
+    pacientes[pacienteAtendido.dni] = pacientes.get(pacienteAtendido.dni, [pacienteAtendido.nombre, "0"]);
+    auto lista = pacientes[pacienteAtendido.dni];
+    string snum = lista[1];
+    int num = to!int(snum);
+    num++;
+    string snum2 = to!string(num);
+    lista[1] = snum2;
+    return pacientes;
+}
+
 string atender_paciente(Multicola multicola, string[][int] pacientes) {
     paciente_t* pacienteAtendido;
     try {
@@ -62,22 +73,7 @@ string atender_paciente(Multicola multicola, string[][int] pacientes) {
         return err.msg;
     }
     string mensaje = format("Se atendio al paciente %s", pacienteAtendido.nombre);
-    pacientes[pacienteAtendido.dni] = pacientes.get(pacienteAtendido.dni, [pacienteAtendido.nombre, "0"]);
-    auto lista = pacientes[pacienteAtendido.dni];
-    writeln(lista);
-    string snum = lista[1];
-    int num = to!int(snum);
-    num++;
-    string snum2 = to!string(num);
-    lista[1] = snum2; 
-    
-    // if (pacienteAtendido.dni in pacientes) {
-    //     auto lista = pacientes[Paciente.dni]; 
-    //     lista[2]++; 
-    // } else {
-    //     pacientes[Paciente.dni] = [Paciente.nombre, 0];
-    // }
-    writeln(pacientes);
+    pacientes = incrementar_atendido(pacientes, pacienteAtendido);
     return mensaje;
 }
 
@@ -86,6 +82,7 @@ void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o AT
     string[] turno;
     string comando;
     string[][int] pacientes;
+    pacientes[0] = ["Nombre", "cantidad_veces_atendido"]; // se inicializa porque sino no funciona
 	
 	string[] lista = stdin.byLineCopy(Yes.keepTerminator).array();
 
