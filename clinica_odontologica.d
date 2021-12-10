@@ -120,8 +120,9 @@ void procesar_entrada(Multicola multicola) { //PEDIR_TURNO:Flor,PRIORITARIO o AT
         else {
             mensaje = "El comando es invalido";
         }
-        thread_joinAll();
-        spawn(&escribir_reporte, mensaje);
+        new Thread({
+            escribir_reporte(mensaje);
+        }).start().join(); // une hilo secundario con el principal    
     }
 }
 
